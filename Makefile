@@ -33,7 +33,16 @@ VERSION_PACKAGE = $(REPOPATH)/pkg/version
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 GO_LDFLAGS := '-extldflags "-static"
 GO_LDFLAGS += -X $(VERSION_PACKAGE).version=$(VERSION)
-GO_LDFLAGS += -w -s # Drop debugging symbols.
+ifndef FOR_REMOTE_DEBUG
+	# We are building for production, so ...
+    # 1. Drop debug symbols
+	GO_LDFLAGS += -w -s
+else
+	# We are building for debugging, so ...
+	# 1. Do NOT drop debug symbols (see above)
+	# 2. Build without optimizations
+	GO_GCFLAGS="all=-N -l"
+endif
 GO_LDFLAGS += '
 
 EXECUTOR_PACKAGE = $(REPOPATH)/cmd/executor
@@ -46,12 +55,19 @@ BUILD_ARG ?=
 export GO111MODULE = on
 export GOFLAGS = -mod=vendor
 
-
 out/executor: $(GO_FILES)
+ifndef FOR_REMOTE_DEBUG
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -o $@ $(EXECUTOR_PACKAGE)
+else
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -o $@ $(EXECUTOR_PACKAGE)
+endif
 
 out/warmer: $(GO_FILES)
+ifndef FOR_REMOTE_DEBUG
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -o $@ $(WARMER_PACKAGE)
+else
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -o $@ $(WARMER_PACKAGE)
+endif
 
 .PHONY: install-container-diff
 install-container-diff:
@@ -98,6 +114,8 @@ images:
 	docker build ${BUILD_ARG} --build-arg=GOARCH=$(GOARCH) -t $(REGISTRY)/executor:debug -f deploy/Dockerfile_debug .
 	docker build ${BUILD_ARG} --build-arg=GOARCH=$(GOARCH) -t $(REGISTRY)/executor:slim -f deploy/Dockerfile_slim .
 	docker build ${BUILD_ARG} --build-arg=GOARCH=$(GOARCH) -t $(REGISTRY)/warmer:latest -f deploy/Dockerfile_warmer .
+	docker build ${BUILD_ARG} --build-arg=GOARCH=$(GOARCH) -t $(REGISTRY)/executor-for-remote-debugger:latest -f deploy/Dockerfile_executor-for-remote-debugger .
+	docker build ${BUILD_ARG} --build-arg=GOARCH=$(GOARCH) -t $(REGISTRY)/warmer-for-remote-debugger:latest -f deploy/Dockerfile_warmer-for-remote-debugger .
 
 .PHONY: push
 push:
@@ -105,3 +123,5 @@ push:
 	docker push $(REGISTRY)/executor:debug
 	docker push $(REGISTRY)/executor:slim
 	docker push $(REGISTRY)/warmer:latest
+	docker push $(REGISTRY)/executor-for-remote-debugger:debug
+	docker push $(REGISTRY)/warmer-for-remote-debugger:latest

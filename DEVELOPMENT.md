@@ -14,7 +14,9 @@ First you will need to setup your GitHub account and create a fork:
 
 Once you have those, you can iterate on kaniko:
 
-1. [Run your instance of kaniko](README.md#running-kaniko)
+1. Run your instance of kaniko
+   1. [In the normal production way](README.md#running-kaniko)
+   2. [In a debugger](DEBUGGING.md#running-kaniko-in-a-remote-debugger)
 1. [Verifying kaniko builds](#verifying-kaniko-builds)
 1. [Run kaniko tests](#testing-kaniko)
 
@@ -42,6 +44,21 @@ To check out this repository:
 
 _Adding the `upstream` remote sets you up nicely for regularly [syncing your
 fork](https://help.github.com/articles/syncing-a-fork/)._
+
+## Debugging kaniko during development
+
+Since Kaniko is primarily intended to be launched within a container, it is not particularly easy to build and debug it on native non-Linux
+platforms e.g. Windows, Mac, especially within an IDE environment.
+
+To overcome this challenge, `executor` and `warmer` are both also available as packaged Docker images configured for remote debugging
+from your favorite IDE.
+
+Running `make images` will produce `executor-for-remote-debugger` and `warmer-for-remote-debugger` which include the relevant Kaniko executable,
+built with debug symbols and launched via the Go debug tool, [Delve](https://github.com/go-delve/delve/blob/master/Documentation/usage/dlv.md).
+
+Once the container is up and running, you can then attach your IDE remote debugger in the normal manner.
+
+For more detail, please see [Running kaniko in a remote debugger](DEBUGGING.md#running-kaniko-in-a-remote-debugger)
 
 ## Verifying kaniko builds
 
