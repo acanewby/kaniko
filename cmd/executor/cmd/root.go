@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"golang.org/x/sys/unix"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -134,6 +135,15 @@ var RootCmd = &cobra.Command{
 				exit(errors.Wrap(err, "error checking push permissions -- make sure you entered the correct tag name, and that you are authenticated correctly, and try again"))
 			}
 		}
+		// Can we write to cache dir if we need to?
+		if opts.Cache && opts.CacheDirWrite {
+			cacheDirWriteable := unix.Access(opts.CacheDir, unix.W_OK) == nil
+			if cacheDirWriteable {
+				opts.CacheDirIsWriteable = true
+			} else {
+				logrus.Warn("cache-dir specified at %s is not writeable.  Operation will proceed but the local cache will not be updated.", opts.CacheDir)
+			}
+		}
 		if err := resolveRelativePaths(); err != nil {
 			exit(errors.Wrap(err, "error resolving relative paths to absolute paths"))
 		}
@@ -199,6 +209,7 @@ func addKanikoOptionsFlags() {
 	RootCmd.PersistentFlags().BoolVarP(&opts.NoPush, "no-push", "", false, "Do not push the image to the registry")
 	RootCmd.PersistentFlags().StringVarP(&opts.CacheRepo, "cache-repo", "", "", "Specify a repository to use as a cache, otherwise one will be inferred from the destination provided")
 	RootCmd.PersistentFlags().StringVarP(&opts.CacheDir, "cache-dir", "", "/cache", "Specify a local directory to use as a cache.")
+	RootCmd.PersistentFlags().BoolVarP(&opts.CacheDirWrite, "cache-dir-write", "", false, "Write layers and images to the local cache directory.")
 	RootCmd.PersistentFlags().StringVarP(&opts.DigestFile, "digest-file", "", "", "Specify a file to save the digest of the built image to.")
 	RootCmd.PersistentFlags().StringVarP(&opts.ImageNameDigestFile, "image-name-with-digest-file", "", "", "Specify a file to save the image name w/ digest of the built image to.")
 	RootCmd.PersistentFlags().StringVarP(&opts.ImageNameTagDigestFile, "image-name-tag-with-digest-file", "", "", "Specify a file to save the image name w/ image tag w/ digest of the built image to.")

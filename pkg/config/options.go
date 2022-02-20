@@ -27,7 +27,15 @@ import (
 // CacheOptions are base image cache options that are set by command line arguments
 type CacheOptions struct {
 	CacheDir string
-	CacheTTL time.Duration
+	// Strictly, CacheDirIsWriteable isn't an option.
+	//  However, cache-dir was originally intended to be read-only and was only changed in
+	// https://github.com/GoogleContainerTools/kaniko/issues/923.
+	// Since it's expected that many existing pipelines may still be using read-only cache directories,
+	// we need to check and see if we can write before actually trying to write back to the directory.
+	// Better to do this once on initialization and store result than repeatedly throughout a build.
+	CacheDirIsWriteable bool
+	CacheDirWrite       bool
+	CacheTTL            time.Duration
 }
 
 // RegistryOptions are all the options related to the registries, set by command line arguments.

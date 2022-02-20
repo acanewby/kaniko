@@ -401,9 +401,12 @@ as a remote image destination:
 
 #### Caching Layers
 kaniko can cache layers created by `RUN` and `COPY` (configured by flag `--cache-copy-layers`) commands in a remote repository.
-Before executing a command, kaniko checks the cache for the layer.
+Optionally, kaniko can also cache layers in the local cache directory.
+Before executing a command, kaniko checks the remote repository cache (and the [local cache directory](#specifying-the-local-cache-directory)), if specified,
+for the layer, with the local cache directory taking precedence.
+
 If it exists, kaniko will pull and extract the cached layer instead of executing the command.
-If not, kaniko will execute the command and then push the newly created layer to the cache.
+If not, kaniko will execute the command and then push the newly created layer to the specified cache(s).
 
 Note that kaniko cannot read layers from the cache after a cache miss: once a layer has not been found in the cache, all subsequent layers are built locally without consulting the cache.
 
@@ -414,7 +417,7 @@ If this flag isn't provided, a cached repo will be inferred from the `--destinat
 #### Caching Base Images
 
 kaniko can cache images in a local directory that can be volume mounted into the kaniko pod.
-To do so, the cache must first be populated, as it is read-only. We provide a kaniko cache warming
+To do so, the cache must first be populated. We provide a kaniko cache warming
 image at `gcr.io/kaniko-project/warmer`:
 
 ```shell
@@ -424,8 +427,15 @@ docker run -v $(pwd):/workspace gcr.io/kaniko-project/warmer:latest --cache-dir=
 `--image` can be specified for any number of desired images.
 This command will cache those images by digest in a local directory named `cache`.
 Once the cache is populated, caching is opted into with the same `--cache=true` flag as above.
-The location of the local cache is provided via the `--cache-dir` flag, defaulting to `/cache` as with the cache warmer.
+
 See the `examples` directory for how to use with kubernetes clusters and persistent cache volumes.
+
+#### Specifying the local cache directory
+
+For both cases above, the local cache is specified via the `--cache-dir` flag, defaulting to `/cache` as with the cache warmer.
+
+By default, to remain compatible with legacy behavior, this local cache is assumed to be mounted read-only. If you wish
+to write intermediate layers and images back to this local cache, you can do so by specifying `--cache-dir-write=true`.
 
 ### Pushing to Different Registries
 
@@ -673,6 +683,12 @@ Set this flag as `--cache=true` to opt into caching with kaniko.
 Set this flag to specify a local directory cache for base images. Defaults to `/cache`.
 
 _This flag must be used in conjunction with the `--cache=true` flag._
+
+#### --cache-dir-write
+
+Set this flag as `--cache-dir-write=true` to write intermediate layers and images back to the local cache.
+
+_This flag must be used in conjunction with the `--cache=true` and `--cache-dir` flags._
 
 #### --cache-repo
 

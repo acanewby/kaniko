@@ -146,13 +146,11 @@ exec
 --context
 dir:///workspace/`
 
-___Note: To avoid possibly polluting a public repository, we point `--destination` to our local Docker repository.___
+___Notes:___
 
-___Note: We map a host directory to `/workspace` in the container filesystem.  The subsequent arguments
-to `/kaniko/executor` reference this location for `--context` and `--dockerfile`.___
-
-___Note: the lone `--` after `/kaniko/executor` tells `Delve` that everything following should be passed as arguments to the `exec`
-target (`/kaniko/executor`) and not considered arguments for `Delve` itself.___
+* _To avoid possibly polluting a public repository, we point `--destination` to our local Docker repository._
+* _We map a host directory to `/workspace` in the container filesystem.  The subsequent arguments to `/kaniko/executor` reference this location for `--context` and `--dockerfile`._
+* _The lone `--` after `/kaniko/executor` tells `Delve` that everything following should be passed as arguments to the `exec` target (`/kaniko/executor`) and not considered arguments for `Delve` itself._
 
 If the image has been built and launched correctly, the container log will indicate that it is listening for a
 remote connection at `TCP/40000`
